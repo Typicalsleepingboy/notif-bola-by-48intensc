@@ -15,6 +15,7 @@ async function scrapeJadwal() {
         let tanggalTerdekat = null;
         let tanggalTerdekatDiff = Infinity;
 
+        // Temukan tanggal terdekat
         tanggalElements.forEach((element) => {
             const tanggal = element.text.trim();
             const tanggalMoment = moment(tanggal, 'DD MMMM YYYY');
@@ -22,11 +23,12 @@ async function scrapeJadwal() {
             const tanggalDiff = Math.abs(tanggalMoment.diff(moment(), 'days'));
 
             if (tanggalDiff < tanggalTerdekatDiff) {
-                tanggalTerdekat = tanggal;
+                tanggalTerdekat = tanggalMoment;
                 tanggalTerdekatDiff = tanggalDiff;
             }
         });
 
+        // Filter jadwal berdasarkan tanggal terdekat
         rows.forEach((element) => {
             const cells = element.querySelectorAll('td');
             if (cells.length >= 4) {
@@ -35,23 +37,29 @@ async function scrapeJadwal() {
                 const competition = cells[2].text.trim();
                 const tvStation = cells[3].text.trim();
 
-                jadwal.push({
-                    time,
-                    match,
-                    competition,
-                    tvStation
-                });
+                // Cek apakah pertandingan terjadi pada tanggal terdekat
+                const matchDate = moment(tanggalTerdekat).format('DD MMMM YYYY');
+
+                if (tanggalTerdekat && matchDate === tanggalTerdekat.format('DD MMMM YYYY')) {
+                    jadwal.push({
+                        time,
+                        match,
+                        competition,
+                        tvStation
+                    });
+                }
             }
         });
 
+        // Urutkan jadwal berdasarkan waktu
         jadwal.sort((a, b) => moment(a.time, 'HH:mm').diff(moment(b.time, 'HH:mm')));
 
         return {
             status: 200,
             message: 'Berhasil mengambil jadwal',
             data: {
-                date: tanggalTerdekat,
-                schedule: jadwal[0] || {}
+                date: tanggalTerdekat.format('DD MMMM YYYY'),
+                schedule: jadwal
             }
         };
     } catch (error) {
